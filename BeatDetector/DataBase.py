@@ -1,6 +1,8 @@
 import os
 import csv
 import numpy as np
+from random import shuffle
+from random import randint
 
 class DataBase:
 
@@ -16,7 +18,7 @@ class DataBase:
             if(not file.endswith(".csv")): continue
             if(x == count): break
             x += 1
-            print(file)
+            #print(file)
             with open(directory + file, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',', quotechar='|')
                 labels = np.zeros((framesPerExample, 2))
@@ -40,7 +42,7 @@ class DataBase:
             if(not file.endswith(".bin")): continue
             if(x == count): break
             x += 1
-            print(file)
+            #print(file)
             data = np.fromfile(directory + file, dtype=np.float32)
             data = np.reshape(data, (framesPerExample, exampleSize + 2))
             self.labels.append(data[:, 0:2])
@@ -51,3 +53,18 @@ class DataBase:
         examples = [self.examples[i] for i in indices]
         labels = [self.labels[i] for i in indices]
         return examples, labels
+
+    def get_epoch(self, size):
+        count = len(self.examples)
+        indices = np.arange(count)
+        shuffle(indices)
+        ex = [self.examples[i] for i in indices]
+        lb = [self.labels[i] for i in indices]
+        exs = [ex[i:i+size] for i in range(0, count - size + 1 , size)]
+        lbs = [lb[i:i+size] for i in range(0, count - size + 1 , size)]
+        return zip(exs, lbs)
+
+    def get_any(self):
+        index = randint(0, len(self.examples) - 1)
+        return self.examples[index], self.labels[index]
+

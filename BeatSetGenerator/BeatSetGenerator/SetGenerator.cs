@@ -53,7 +53,7 @@ namespace BeatSetGenerator
 			foreach(FileInfo beatFile in beatFiles)
 			{
 				string beatPath = beatFile.FullName;
-				string pattern = Path.GetFileNameWithoutExtension(beatFile.Name) + "*.ogg";
+				string pattern = Path.GetFileNameWithoutExtension(beatFile.Name) + ".ogg";
 				IEnumerable<FileInfo> audioFiles = input.EnumerateFiles(pattern);
 				foreach(FileInfo audio in audioFiles)
 				{
@@ -95,7 +95,12 @@ namespace BeatSetGenerator
 					txt.BaseStream.Seek(0, SeekOrigin.Begin);
 					txt.DiscardBufferedData();
 					contents = txt.ReadToEnd();
-					beatPositions = Array.ConvertAll(contents.Split('\n'), s => (int) (float.Parse(s) * samplingRate));
+					beatPositions = Array.ConvertAll(contents.Split('\n'), s =>
+					{
+						float ret = float.MaxValue;
+						float.TryParse(s, out ret);
+						return (int)(ret * samplingRate);
+					});
 				}
 				
 
@@ -107,6 +112,10 @@ namespace BeatSetGenerator
 				}
 
 				int windowIndex = 0;
+				float[] last = new float[60];
+				int lastBeatIndex = 0;
+				int beatState = 0;
+				const int beatLength = 5;
 				while (true)
 				{
 					int windowEnd = windowIndex * ogg.SampleRate / frameRate;
@@ -127,25 +136,30 @@ namespace BeatSetGenerator
 						magnitudes[i] = (float)(fftBuffer[i].X * fftBuffer[i].X + fftBuffer[i].Y * fftBuffer[i].Y) + 1e-15f;
 					}
 
+					//aggregator.Tones.CopyTo(last, 0);
 					aggregator.Aggregate(magnitudes, 0);
 
 					// find if current segment has beat
-					// simple linear search
 					float hasBeat = 0;
-					foreach (int beat in beatPositions)
+					if(lastBeatIndex < beatPositions.Length)
 					{
-						if (beat > windowBegin && beat <= windowEnd)
+						int pos = beatPositions[lastBeatIndex];
+						if(pos <= windowEnd)
 						{
-							hasBeat = 1;
-							break;
+							beatState = beatLength;
+							lastBeatIndex++;
 						}
 					}
+					hasBeat = beatState > 0 ? 1.0f : 0.0f;
+					beatState--;
 
 					output.Write(1 - hasBeat);
 					output.Write(hasBeat);
-					foreach(float t in aggregator.Tones)
+					for(int i = 0; i < 120; ++i)
 					{
-						output.Write(t);
+						output.Write(aggregator.Tones[i]);
+						//float diff = aggregator.Tones[i] - last[i];
+						//output.Write(diff);
 					}
 					++framesInExample;
 					if(framesInExample >= framesPerExample)

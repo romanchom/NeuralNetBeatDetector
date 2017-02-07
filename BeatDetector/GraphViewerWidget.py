@@ -5,14 +5,32 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.spinner import Spinner
-from kivy.graphics import Color, Line, Ellipse
+from kivy.graphics import Color, Line, Ellipse, Rectangle
 from kivy.core.window import Window
+from kivy.graphics.texture import Texture
 
+import numpy as np
 
 class GraphViewerWidget(Widget):
     def __init__(self, **kwargs):
         super(GraphViewerWidget, self).__init__(**kwargs)
+        self.texture = Texture.create(size=(200, 120))
+        self.buffer = np.random.random(200 * 120).astype('float32')
+        self.texture.blit_buffer(self.buffer, colorfmt='luminance', bufferfmt='float')
         self.graphs = {}
+        with self.canvas:
+            self.image = Rectangle(texture=self.texture, size=Window.size)
+
+    def set_spectrogram(self, data):
+        flat = np.zeros(data.shape, dtype='float32')
+        flat = np.transpose(data, [1, 0])
+        flat = np.reshape(flat, [-1])
+
+        for i in range(len(flat)):
+            self.buffer[i] = float(flat[i] / 5 + 1.5)
+        self.texture.blit_buffer(self.buffer, colorfmt='luminance', bufferfmt='float')
+        self.image.texture=self.texture
+
 
     def set_graph(self, name, points, color=(1, 0, 0)):
         size = Window.size

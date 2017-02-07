@@ -252,3 +252,5 @@ paket-files/
 *.sln.iml
 */__pycache__/
 */.vscode/
+BeatDetector/save/
+BeatDetector/export/
