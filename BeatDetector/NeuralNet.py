@@ -102,6 +102,9 @@ class NeuralNet:
             
             # RESET OP
             self.reset_cell_state_op = self.assign_state_op(state_variables, self.cell.zero_state(1, tf.float32), "reset_op")
+            cell_vars = [elem for t0 in state_variables for elem in t0]
+            self.var_init_full_name = tf.variables_initializer(cell_vars, name="init").name
+            
 
 
     def make_new(self):
@@ -110,6 +113,7 @@ class NeuralNet:
         self.make_inference_graph()
         
         init_op = tf.global_variables_initializer()
+        print(init_op.name)
         self.sess.run(init_op)
         
         writer = tf.summary.FileWriter("./log", self.sess.graph)
@@ -158,13 +162,14 @@ class NeuralNet:
     
     def export_to_protobuffer(self, directory):
         whitelist = [v.op.name for v in tf.trainable_variables()]
-        inference_graph = convert_variables_to_constants(self.sess, self.sess.graph_def, [self.output_full_name], whitelist)
+        inference_graph = convert_variables_to_constants(self.sess, self.sess.graph_def, [self.output_full_name, self.var_init_full_name], whitelist)
         
         tf.train.write_graph(inference_graph, directory, 'minimal_graph.pb', as_text=False)
         tf.train.write_graph(inference_graph, directory, 'minimal_graph.pbtxt', as_text=True)
         print("Graph saved")
         print("Use \"{}\" as input name".format(self.input_full_name))
         print("Use \"{}\" as output name".format(self.output_full_name))
+        print("Use \"{}\" as init name".format(self.var_init_full_name))
 
     def load(self):
         #saver = tf.train.import_meta_graph(NeuralNet.save_dir + "model.meta")
