@@ -3,6 +3,7 @@ import csv
 import numpy as np
 from random import shuffle
 from random import randint
+from Config import Config
 
 class DataBase:
 
@@ -11,8 +12,6 @@ class DataBase:
         self.labels = []
 
     def load_csv(self, directory, count=-1):
-        framesPerExample = 200
-        exampleSize = 120
         x = 0
         for file in os.listdir(directory):
             if(not file.endswith(".csv")): continue
@@ -21,22 +20,21 @@ class DataBase:
             #print(file)
             with open(directory + file, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-                labels = np.zeros((framesPerExample, 2))
-                examples = np.zeros((framesPerExample, exampleSize))
+                labels = np.zeros((Config.framesPerExample, 2))
+                examples = np.zeros((Config.framesPerExample, exampleLength))
                 i = 0
                 for row in reader:
                     isBeat = int(row[0])
                     # one hot encoding
                     labels[i, isBeat] = 1
-                    for j in range(exampleSize):
+                    for j in range(exampleLength):
                         examples[i, j] = float(row[j + 1])
                     i += 1
                 self.labels.append(labels)
                 self.examples.append(examples)
 
     def load_bin(self, directory, count=-1):
-        framesPerExample = 200
-        exampleSize = 120
+        exampleLength = 120
         x = 0
         for file in os.listdir(directory):
             if(not file.endswith(".bin")): continue
@@ -44,7 +42,7 @@ class DataBase:
             x += 1
             #print(file)
             data = np.fromfile(directory + file, dtype=np.float32)
-            data = np.reshape(data, (framesPerExample, exampleSize + 2))
+            data = np.reshape(data, (Config.framesPerExample, exampleLength + 2))
             self.labels.append(data[:, 0:2])
             self.examples.append(data[:, 2:122])
 

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 
 namespace BeatSetGenerator
 {
@@ -11,8 +11,19 @@ namespace BeatSetGenerator
 	{
 		static void Main(string[] args)
 		{
-			SetGenerator gen = new SetGenerator(10, 100, 200);
-			gen.ConvertDirectory(args[0], args[1]);
+			try
+			{
+				int frameRate = int.Parse(args[2]);
+				int length = int.Parse(args[3]);
+				SetGenerator.outputDirectory = args[1];
+				ParallelGenerator gen = new ParallelGenerator(args[0], frameRate, length);
+				gen.Run();
+
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+			}
 		}
 	}
 }

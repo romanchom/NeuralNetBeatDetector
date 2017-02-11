@@ -6,6 +6,7 @@ from kivy.app import App
 from GraphViewerWidget import GraphViewerWidget
 import numpy as np
 from kivy.clock import Clock
+from Config import Config
 
 class Beat(App):
     def __init__(self, **kwargs):
@@ -29,15 +30,15 @@ class Beat(App):
         self.train_thread.join()
 
     def train_nn(self):
-        batch_size = 1022
-        no_improvement_limit = 20
+        no_improvement_limit = 200
 
         self.nn = NeuralNet()
         if self.should_load: self.nn.load()
         self.training_set.load_bin("C:\\BeatDetectorData\\TrainingBin\\", count=-1)
-        self.validation_set.load_bin("C:\\BeatDetectorData\\ValidationBin\\", count=-1)
+        #self.validation_set.load_bin("C:\\BeatDetectorData\\ValidationBin\\", count=-1)
         
-        valid_ex, valid_lab = self.training_set.get_batch(batch_size)
+        batch_size = 512
+        valid_ex, valid_lab = self.training_set.get_batch(Config.batch_size)
 
         
         last_improvement = 0
@@ -45,7 +46,7 @@ class Beat(App):
         for i in range(10000):
             
             # TRAIN ON ENTIRE DATA SET IN RANDOM ORDER
-            epoch = self.training_set.get_epoch(batch_size)
+            epoch = self.training_set.get_epoch(Config.batch_size)
             for examples, labels in epoch:
                 if(self.should_exit): break
                 self.nn.train(examples, labels)
@@ -58,6 +59,7 @@ class Beat(App):
             # VALIDATE ON RANDOM SUBSET
             cross_entropy = self.nn.validate(valid_ex, valid_lab)
             print("Epoch: {}, Cross_entropy: {}".format(i, cross_entropy))
+
             
             if(cross_entropy < best_cross_entropy):
                 last_improvement = i
@@ -108,6 +110,6 @@ class Beat(App):
 
 if __name__ == '__main__':
     app = Beat()
-    app.should_load = True
+    app.should_load = False
     app.should_save = True
     app.run()

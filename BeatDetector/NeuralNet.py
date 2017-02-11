@@ -3,11 +3,9 @@ import os
 from random import randint
 import numpy as np
 from tensorflow.python.framework.graph_util import convert_variables_to_constants
+from Config import Config
 
-
-maxLen = 200
-exampleLen = 120
-numMemCells = 100
+numMemCells = 50
 
 class NeuralNet:
     
@@ -22,7 +20,7 @@ class NeuralNet:
         with tf.variable_scope('variables'):     
             # recurent cells
             self.cell = tf.nn.rnn_cell.LSTMCell(numMemCells, state_is_tuple=True)
-            self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * 2, state_is_tuple=True)
+            self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * 3, state_is_tuple=True)
             
             # projection matrix
             self.weight = tf.Variable(tf.truncated_normal([numMemCells, 2], stddev = 0.1))
@@ -35,8 +33,8 @@ class NeuralNet:
         # INPUT DATA
         
             with tf.variable_scope('input'):
-                self.examples = tf.placeholder(tf.float32, [None, maxLen, exampleLen], name="examples")
-                self.labels = tf.placeholder(tf.float32, [None, maxLen, 2], name="labels")
+                self.examples = tf.placeholder(tf.float32, [None, Config.framesPerExample, Config.exampleLength], name="examples")
+                self.labels = tf.placeholder(tf.float32, [None, Config.framesPerExample, 2], name="labels")
                 self.inputLengths = tf.placeholder(tf.int32, [None], name="lengths")
                 
             
@@ -47,9 +45,13 @@ class NeuralNet:
             
                 flat = tf.reshape(cell_out, (-1, numMemCells))
                 prediction = tf.matmul(flat, self.weight) + self.bias
-                prediction = tf.reshape(prediction, (tf.shape(self.examples)[0], maxLen, 2))
-
-                self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction, self.labels), name="cross_entropy")
+                prediction = tf.reshape(prediction, (tf.shape(self.examples)[0], Config.framesPerExample, 2))
+                
+                self.cross_entropy = tf.nn.softmax_cross_entropy_with_logits(prediction, self.labels)
+                self.cross_entropy = tf.slice(self.cross_entropy, [0, Config.framesPerExample // 2], [-1, -1])
+                print(self.cross_entropy.get_shape())
+                self.cross_entropy = tf.reduce_mean(self.cross_entropy, name="cross_entropy")
+                
                 optimizer = tf.train.AdamOptimizer()
                 self.optimize = optimizer.minimize(self.cross_entropy, name="optimize")
         
@@ -68,7 +70,7 @@ class NeuralNet:
         
         with tf.variable_scope('inference') as inference_scope:
             #INFERENCE INPUT - single "batch"
-            self.inference_input = tf.placeholder(tf.float32, [1, exampleLen], name="input")
+            self.inference_input = tf.placeholder(tf.float32, [1, Config.exampleLength], name="input")
             self.input_full_name = self.inference_input.op.name
             
             # LSTM cell state variables
@@ -124,7 +126,7 @@ class NeuralNet:
         return {
             self.examples: examples,
             self.labels: labels,
-            self.inputLengths: [maxLen] * len(examples)
+            self.inputLengths: [Config.framesPerExample] * len(examples)
         }
 
     def train(self, examples, labels):
@@ -138,14 +140,14 @@ class NeuralNet:
     def examine(self, example):
         feed = {
             self.examples: [example],
-            self.inputLengths: [maxLen]
+            self.inputLengths: [Config.framesPerExample]
         }
 
         return self.sess.run(self.prediction, feed)[0]
     
     def single_step_examine(self, example):
         feed = {}
-        output = np.zeros([maxLen])
+        output = np.zeros([Config.framesPerExample])
         for i in range(len(example)):
             feed[self.inference_input] = [example[i]]
             ret = self.sess.run([self.inference_op], feed)

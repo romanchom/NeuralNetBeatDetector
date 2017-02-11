@@ -55,6 +55,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BeatFileParser.cs" />
+    <Compile Include="FeatureExtractor.cs" />
+    <Compile Include="MelAggregator.cs" />
+    <Compile Include="MonoFileReader.cs" />
+    <Compile Include="ParallelGenerator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SetGenerator.cs" />

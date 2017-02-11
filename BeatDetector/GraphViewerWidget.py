@@ -10,12 +10,14 @@ from kivy.core.window import Window
 from kivy.graphics.texture import Texture
 
 import numpy as np
+from Config import Config
 
 class GraphViewerWidget(Widget):
     def __init__(self, **kwargs):
         super(GraphViewerWidget, self).__init__(**kwargs)
-        self.texture = Texture.create(size=(200, 120))
-        self.buffer = np.random.random(200 * 120).astype('float32')
+        Window.size = (1600, 900)
+        self.texture = Texture.create(size=(Config.framesPerExample, Config.exampleLength))
+        self.buffer = np.random.random(Config.framesPerExample * Config.exampleLength).astype('float32')
         self.texture.blit_buffer(self.buffer, colorfmt='luminance', bufferfmt='float')
         self.graphs = {}
         with self.canvas:
@@ -27,7 +29,7 @@ class GraphViewerWidget(Widget):
         flat = np.reshape(flat, [-1])
 
         for i in range(len(flat)):
-            self.buffer[i] = float(flat[i] / 5 + 1.5)
+            self.buffer[i] = float(flat[i] / 12)
         self.texture.blit_buffer(self.buffer, colorfmt='luminance', bufferfmt='float')
         self.image.texture=self.texture
 
