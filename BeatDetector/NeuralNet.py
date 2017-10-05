@@ -18,9 +18,6 @@ class NeuralNet:
         
         # MODEL VARIABLES   
         with tf.variable_scope('variables'):     
-            # recurent cells
-            self.cell = tf.nn.rnn_cell.LSTMCell(numMemCells, state_is_tuple=True)
-            self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * 3, state_is_tuple=True)
             
             # projection matrix
             self.weight = tf.Variable(tf.truncated_normal([numMemCells, 2], stddev = 0.1))
@@ -28,6 +25,12 @@ class NeuralNet:
 
     def make_training_graph(self):
         # TRAINING GRAPH
+        # recurent cells
+        cells = [
+            tf.nn.rnn_cell.LSTMCell(numMemCells, state_is_tuple=True),
+            tf.nn.rnn_cell.LSTMCell(numMemCells, state_is_tuple=True)
+        ]
+        self.cell = tf.nn.rnn_cell.MultiRNNCell(cells, state_is_tuple=True)
         
         with tf.variable_scope('training'):
         # INPUT DATA
@@ -47,7 +50,7 @@ class NeuralNet:
                 prediction = tf.matmul(flat, self.weight) + self.bias
                 prediction = tf.reshape(prediction, (tf.shape(self.examples)[0], Config.framesPerExample, 2))
                 
-                self.cross_entropy = tf.nn.softmax_cross_entropy_with_logits(prediction, self.labels)
+                self.cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=self.labels)
                 self.cross_entropy = tf.slice(self.cross_entropy, [0, Config.framesPerExample // 2], [-1, -1])
                 print(self.cross_entropy.get_shape())
                 self.cross_entropy = tf.reduce_mean(self.cross_entropy, name="cross_entropy")

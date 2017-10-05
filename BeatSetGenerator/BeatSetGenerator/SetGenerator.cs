@@ -51,22 +51,18 @@ namespace BeatSetGenerator
 				{
 					fs[i] = extractors[i].ExtractFeatures(sampleBuffer);
 				}
-				int fileCount = fs[0].GetLength(0) / framesPerExample;
-
-				for(int file = 0; file < fileCount; ++file)
+				
+				using (BinaryWriter writer = GetNextExampleFile())
 				{
-					using(BinaryWriter writer = GetNextExampleFile())
+					for (int t = 0; t < fs[0].GetLength(0); ++t)
 					{
-						for (int t = file * framesPerExample; t < (file + 1) * framesPerExample; ++t)
+						writer.Write(1 - beatParser.Beats[t]);
+						writer.Write(beatParser.Beats[t]);
+						for (int e = 0; e < extractorCount; ++e)
 						{
-							writer.Write(1 - beatParser.Beats[t]);
-							writer.Write(beatParser.Beats[t]);
-							for (int e = 0; e < extractorCount; ++e)
+							for (int f = 0; f < totalFeatures / extractorCount; ++f)
 							{
-								for(int f = 0; f < totalFeatures / extractorCount; ++f)
-								{
-									writer.Write(fs[e][t, f]);
-								}
+								writer.Write(fs[e][t, f]);
 							}
 						}
 					}
